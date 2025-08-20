@@ -1,0 +1,42 @@
+pipeline {
+  agent any
+  options { timestamps(); ansiColor('xterm') }
+
+  stages {
+    stage('Checkout') { steps { checkout scm } }
+
+    stage('Install & Test') {
+      steps {
+        sh '''
+          python3 -V
+          pip3 -V || python3 -m ensurepip --upgrade
+          python3 -m pip install --user -r requirements.txt
+          python3 -m pytest -q --junitxml=test-results/pytest.xml
+        '''
+      }
+      post {
+        always {
+          junit 'test-results/pytest.xml'
+          archiveArtifacts artifacts: 'test-results/pytest.xml', fingerprint: true
+        }
+      }
+    }
+
+    stage('Docker Build & Run') {
+      steps {
+        sh '''
+          docker -v
+          docker build -t myapp:latest .
+          docker rm -f myapp_running || true
+          docker run -d --name myapp_running -p 5000:5000 myapp:latest
+        '''
+      }
+    }
+  }
+
+  post {
+    success { echo 'OK' }
+    failure { echo 'FAIL' }
+  }
+}
+

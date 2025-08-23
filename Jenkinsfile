@@ -33,7 +33,7 @@ pipeline {
       steps {
         sh '''
           echo "== Run new container =="
-          docker run -d --name $CONTAINER_NAME -p 5000:5000 $IMAGE_NAME:$IMAGE_TAG
+          docker run -d --name $CONTAINER_NAME -p 5001:5000 $IMAGE_NAME:$IMAGE_TAG
           docker ps | grep $CONTAINER_NAME
         '''
       }

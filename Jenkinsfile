@@ -4,6 +4,8 @@ pipeline {
     IMAGE_NAME = "test-local-image"
     IMAGE_TAG = "latest"
     CONTAINER_NAME = "test-flask-container"
+    EXTERNAL_PORT = "5001"
+    INTERNAL_PORT = "5000"
   }
   stages {
     stage('Checkout') {
@@ -16,7 +18,6 @@ pipeline {
         sh '''
           echo "== Docker build =="
           docker build -t $IMAGE_NAME:$IMAGE_TAG .
-          docker images | grep $IMAGE_NAME
         '''
       }
     }
@@ -33,8 +34,24 @@ pipeline {
       steps {
         sh '''
           echo "== Run new container =="
-          docker run -d --name $CONTAINER_NAME -p 5001:5000 $IMAGE_NAME:$IMAGE_TAG
-          docker ps | grep $CONTAINER_NAME
+          docker run -d --name $CONTAINER_NAME -p $EXTERNAL_PORT:$INTERNAL_PORT $IMAGE_NAME:$IMAGE_TAG
+        '''
+      }
+    }
+    stage('Check Health') {
+      steps {
+        sh '''
+          echo "== Curl check =="
+          sleep 3
+          curl -f http://localhost:$EXTERNAL_PORT || echo "Flask not responding"
+        '''
+      }
+    }
+    stage('Print Container Logs') {
+      steps {
+        sh '''
+          echo "== Container logs =="
+          docker logs $CONTAINER_NAME || true
         '''
       }
     }
